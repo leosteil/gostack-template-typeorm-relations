@@ -3,40 +3,63 @@ import { getRepository, Repository, In } from 'typeorm';
 import IProductsRepository from '@modules/products/repositories/IProductsRepository';
 import ICreateProductDTO from '@modules/products/dtos/ICreateProductDTO';
 import IUpdateProductsQuantityDTO from '@modules/products/dtos/IUpdateProductsQuantityDTO';
+import { throws } from 'assert';
 import Product from '../entities/Product';
 
 interface IFindProducts {
-  id: string;
+    id: string;
 }
 
 class ProductsRepository implements IProductsRepository {
-  private ormRepository: Repository<Product>;
+    private ormRepository: Repository<Product>;
 
-  constructor() {
-    this.ormRepository = getRepository(Product);
-  }
+    constructor() {
+        this.ormRepository = getRepository(Product);
+    }
 
-  public async create({
-    name,
-    price,
-    quantity,
-  }: ICreateProductDTO): Promise<Product> {
-    // TODO
-  }
+    public async create({
+        name,
+        price,
+        quantity,
+    }: ICreateProductDTO): Promise<Product> {
+        const customer = this.ormRepository.create({
+            name,
+            price,
+            quantity,
+        });
 
-  public async findByName(name: string): Promise<Product | undefined> {
-    // TODO
-  }
+        await this.ormRepository.save(customer);
 
-  public async findAllById(products: IFindProducts[]): Promise<Product[]> {
-    // TODO
-  }
+        return customer;
+    }
 
-  public async updateQuantity(
-    products: IUpdateProductsQuantityDTO[],
-  ): Promise<Product[]> {
-    // TODO
-  }
+    public async findByName(name: string): Promise<Product | undefined> {
+        const product = await this.ormRepository.findOne({
+            where: {
+                name,
+            },
+        });
+
+        return product;
+    }
+
+    public async findAllById(products: IFindProducts[]): Promise<Product[]> {
+        const productsId = products.map(product => product.id);
+
+        const product = await this.ormRepository.find({
+            where: {
+                id: In(productsId),
+            },
+        });
+
+        return product;
+    }
+
+    public async updateQuantity(
+        products: IUpdateProductsQuantityDTO[],
+    ): Promise<Product[]> {
+        return this.ormRepository.save(products);
+    }
 }
 
 export default ProductsRepository;
